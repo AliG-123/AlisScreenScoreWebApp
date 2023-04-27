@@ -3,8 +3,10 @@ package com.infotel.ali.alisscreenscorewebapp.services;
 import com.infotel.ali.alisscreenscorewebapp.dto.TvShowDTO;
 import com.infotel.ali.alisscreenscorewebapp.exceptions.MovieExceptions;
 import com.infotel.ali.alisscreenscorewebapp.models.Review;
+import com.infotel.ali.alisscreenscorewebapp.models.TvReview;
 import com.infotel.ali.alisscreenscorewebapp.models.TvShow;
 import com.infotel.ali.alisscreenscorewebapp.repositories.ReviewRepository;
+import com.infotel.ali.alisscreenscorewebapp.repositories.TvReviewRepository;
 import com.infotel.ali.alisscreenscorewebapp.repositories.TvShowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,14 +21,15 @@ import java.util.Optional;
 
 @Service
 public class TvShowService {
+    @Autowired
     private TvShowRepository tvShowRepository;
 
-    private ReviewRepository reviewRepository;
+    private TvReviewRepository tvReviewRepository;
 
-    @Autowired
-    public TvShowService(ReviewRepository reviewRepository, TvShowRepository tvShowRepository) {
-        this.reviewRepository = reviewRepository;
-        this.tvShowRepository= tvShowRepository;
+
+    public TvShowService(TvShowRepository tvShowRepository, TvReviewRepository tvReviewRepository) {
+        this.tvShowRepository = tvShowRepository;
+        this.tvReviewRepository = tvReviewRepository;
     }
 
 
@@ -34,23 +37,23 @@ public class TvShowService {
     // Step 1: Calculate average rating for a movie
     public BigDecimal calculateAverageRating(Integer id) {
         // Query the database for all ratings for the given movie ID
-        List<Review> reviews = reviewRepository.findByMovieId(id);
-        if (reviews.isEmpty()) {
+        List<TvReview> tvReviews = tvReviewRepository.findByTvShowId(id);
+        if (tvReviews.isEmpty()) {
             return BigDecimal.ZERO;
         }
 
         // Calculate the average rating
         BigDecimal sum = BigDecimal.ZERO;
-        for (Review review : reviews) {
-            sum = sum.add(review.getRating());
+        for (TvReview tvReview : tvReviews) {
+            sum = sum.add(tvReview.getRating());
         }
-        BigDecimal averageRating = sum.divide(BigDecimal.valueOf(reviews.size()), 1, RoundingMode.HALF_UP);
+        BigDecimal averageRating = sum.divide(BigDecimal.valueOf(tvReviews.size()), 1, RoundingMode.HALF_UP);
 
         return averageRating;
     }
 
     // Step 2: Call this method whenever a new rating is added, updated, or deleted
-    public void updateMovieAverageRating(Integer id) {
+    public void updateTvShowAverageRating(Integer id) {
         BigDecimal averageRating = calculateAverageRating(id);
 
         // Update the Movie entity in the database with the calculated average rating
@@ -77,7 +80,7 @@ public class TvShowService {
         // Call the method to update average ratings for all movies in the database
         List<TvShow> tvShows = tvShowRepository.findAll();
         for (TvShow tvShow : tvShows) {
-            updateMovieAverageRating(tvShow.getId());
+            updateTvShowAverageRating(tvShow.getId());
         }
 
         // Retrieve movies from the data source sorted by averageRating in descending order
@@ -92,18 +95,18 @@ public class TvShowService {
     }
 
     // Method to get all movies and return MovieDTO
-    public List<TvShowDTO> getAllMovies() {
-        List<TvShow> movies = tvShowRepository.findAll();
-        List<TvShowDTO> movieDTOs = new ArrayList<>();
-        for (TvShow tvShow : movies) {
-            updateMovieAverageRating(tvShow.getId());
-            movieDTOs.add(convertToDTO(tvShow));
+    public List<TvShowDTO> getAllTvShows() {
+        List<TvShow> tvShows = tvShowRepository.findAll();
+        List<TvShowDTO> tvShowDTOS = new ArrayList<>();
+        for (TvShow tvShow : tvShows) {
+            updateTvShowAverageRating(tvShow.getId());
+            tvShowDTOS.add(convertToDTO(tvShow));
         }
-        return movieDTOs;
+        return tvShowDTOS;
     }
 
     // Method to get movie by id and return MovieDTO
-    public TvShowDTO getMovieById(int id) {
+    public TvShowDTO getTvShowById(int id) {
         Optional<TvShow> optionalTvShow = tvShowRepository.findById(id);
         if (optionalTvShow.isPresent()) {
             TvShow tvShow = optionalTvShow.get();
@@ -113,7 +116,7 @@ public class TvShowService {
     }
 
     // Method to create movie and return MovieDTO
-    public TvShowDTO createMovie(String title, String coverPhotoUrl, LocalDate releaseDate) {
+    public TvShowDTO createTvShow(String title, String coverPhotoUrl, LocalDate releaseDate) {
         // Check if username is already taken
         if (tvShowRepository.existsByTitle(title)) {
             System.out.println("TvShow already exists");
